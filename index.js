@@ -4,16 +4,26 @@ const morgan = require('morgan')
 const app = express()
 
 app.use(express.json())
-app.use(morgan('tiny'))
 
-/* const requestLogger = (request, response, next) => {
-    console.log('Method:', request.method)
-    console.log('Path:  ', request.path)
-    console.log('Body:  ', request.body)
-    console.log('---')
+const catcher = (req, res, next) => {
+    if(req.body) {
+        res.locals.holder = JSON.stringify(req.body)
+    }
     next()
 }
-app.use(requestLogger) */
+app.use(catcher)
+
+const customMorgan = (tokens, req, res) => {
+    return [
+        tokens.method(req, res),
+        tokens.url(req, res),
+        tokens.status(req, res),
+        tokens.res(req, res, 'content-length'), '-',
+        tokens['response-time'](req, res), 'ms',
+        res.locals.holder
+    ].join(' ')
+}
+app.use(morgan(customMorgan))
 
 
 let persons = [
