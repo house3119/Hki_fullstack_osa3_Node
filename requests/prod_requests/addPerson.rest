@@ -1,0 +1,7 @@
+POST https://hki-fullstack-osa3-node.onrender.com/api/persons
+Content-Type: application/json
+
+{
+    "name": "Jesse",
+    "number": "045-123124"
+}
