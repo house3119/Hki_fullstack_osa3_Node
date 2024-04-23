@@ -1,13 +1,14 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
-
+const Person = require('./models/person')
 const app = express()
-
 app.use(cors())
 app.use(express.json())
 app.use(express.static('dist'))
 
+// Middleware setup
 const catcher = (req, res, next) => {
     if(req.body) {
         res.locals.holder = JSON.stringify(req.body)
@@ -29,27 +30,11 @@ const customMorgan = (tokens, req, res) => {
 app.use(morgan(customMorgan))
 
 
-let persons = [
-    {
-        "id": 1,
-        "name": "Arto Hellis",
-        "number": "040-123456"
-    },
-    {
-        "id": 2,
-        "name": "Ada Lovelace",
-        "number": "39-44-37645"
-    },
-    {
-        "id": 3,
-        "name": "Dan Abramov",
-        "number": "12-43-049786"
-    },
-]
-
-
+// Routes
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 })
 
 
@@ -105,3 +90,4 @@ const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
