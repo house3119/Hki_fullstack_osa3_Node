@@ -10,48 +10,50 @@ app.use(express.static('dist'))
 
 // Middleware setup
 const catcher = (req, res, next) => {
-    if(req.body) {
+    if (req.body) {
         res.locals.holder = JSON.stringify(req.body)
-    }
-    next()
+    };
+    next();
 }
-app.use(catcher)
+app.use(catcher);
 
-const customMorgan = (tokens, req, res) => {
+const incomingMorgan = (tokens, req, res) => {
     return [
         tokens.method(req, res),
         tokens.url(req, res),
         tokens.status(req, res),
         tokens.res(req, res, 'content-length'), '-',
-        tokens['response-time'](req, res), 'ms',
-        res.locals.holder
+        tokens['response-time'](req, res), 'ms -',
+        'Req body:',res.locals.holder
     ].join(' ')
 }
-app.use(morgan(customMorgan))
+app.use(morgan(incomingMorgan));
 
 
 // Routes
 app.get('/api/persons', (request, response) => {
     Person.find({}).then(persons => {
-        response.json(persons)
-    })
+        response.json(persons);
+    });
 })
 
 
 app.post('/api/persons', (request, response) => {
-    const person = request.body
+    if (!request.body.name) {
+        return response.status(400).json({error: "Name missing"})
 
-    if (!person.name || !person.number) {
-        return response.status(400).json({error: "Name or number missing."})
-    } else if (persons.find(per => per.name.toLowerCase() === person.name.toLowerCase())) {
-        return response.status(400).json({error: "Name must be unique."})
-    }
-
-    person.id = (Math.random() * 100000).toFixed()
-    person.id = parseInt(person.id)
-    persons = persons.concat(person)
-    response.json(person)
-})
+    } else {
+        const person = new Person({
+            id: (Math.random() * 100000).toFixed(),
+            name: request.body.name,
+            number: request.body.number? request.body.number : null
+        });
+          
+        person.save().then(() => {
+            response.json(person);
+        });
+    };
+});
 
 
 app.get('/api/persons/:id', (request, response) => {
@@ -66,10 +68,19 @@ app.get('/api/persons/:id', (request, response) => {
 
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(person => person.id !== id)
-    response.status(204).end()
-})
+    Person.findOneAndDelete({id : Number(request.params.id)})
+        .then((res) => {
+            if (!res) {
+                response.status(404).json({error : 'Not Found'});
+            } else {
+                response.status(204).end();
+            }
+        })
+        .catch((err) => {
+            console.log(err)
+            response.status(404).json({error : 'Error'})
+        });
+});
 
 
 app.get('/info', (request, response) => {
