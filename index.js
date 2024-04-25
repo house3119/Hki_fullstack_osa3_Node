@@ -48,7 +48,7 @@ app.post('/api/persons', (request, response, next) => {
 
     } else {
         const person = new Person({
-            id: (Math.random() * 100000).toFixed(),
+            id: (Math.random() * 10000000).toFixed(),
             name: request.body.name,
             number: request.body.number? request.body.number : null
         });
@@ -61,15 +61,11 @@ app.post('/api/persons', (request, response, next) => {
 });
 
 
-app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(person => person.id === id)
-    if(!person) {
-        response.status(404).end()
-    } else {
-        response.json(person)
-    }
-})
+app.put('/api/persons/:id', (request, response, next) => {
+    Person.findOneAndUpdate({id : Number(request.params.id)}, {number : request.body.number})
+        .then(() => response.status(200).json({Message: 'Ok'}))
+        .catch(error => next(error));
+});
 
 
 app.delete('/api/persons/:id', (request, response, next) => {
