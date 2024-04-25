@@ -27,21 +27,22 @@ const incomingMorgan = (tokens, req, res) => {
         tokens.status(req, res),
         tokens.res(req, res, 'content-length'), '-',
         tokens['response-time'](req, res), 'ms -',
-        'Req body:',res.locals.holder
+        res.locals.holder? `Req body: ${res.locals.holder}` : ''
     ].join(' ')
 }
 app.use(morgan(incomingMorgan));
 
 
 // Routes
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
     Person.find({}).then(persons => {
         response.json(persons);
-    });
+    })
+    .catch(error => next(error))
 })
 
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     if (!request.body.name) {
         return response.status(400).json({error: "Name missing"})
 
@@ -54,7 +55,8 @@ app.post('/api/persons', (request, response) => {
           
         person.save().then(() => {
             response.json(person);
-        });
+        })
+        .catch(error => next(error))
     };
 });
 
@@ -70,7 +72,7 @@ app.get('/api/persons/:id', (request, response) => {
 })
 
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
     Person.findOneAndDelete({id : Number(request.params.id)})
         .then((res) => {
             if (!res) {
@@ -78,11 +80,7 @@ app.delete('/api/persons/:id', (request, response) => {
             } else {
                 response.status(204).end();
             }
-        })
-        .catch((err) => {
-            console.log(err)
-            response.status(404).json({error : 'Error'})
-        });
+        }).catch(error => next(error));
 });
 
 
@@ -94,11 +92,21 @@ app.get('/info', (request, response) => {
     )
 })
 
+// Custom error handler middleware
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+    if (error.name === 'CastError') {
+      return response.status(400).send({ Error: 'Malformatted id' })
+    }
+    next(error)
+};
+app.use(errorHandler)
+
 
 // Unknown endpoint middleware
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
-  }
+}
 app.use(unknownEndpoint)
 
 
