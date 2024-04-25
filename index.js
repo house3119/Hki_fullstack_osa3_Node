@@ -1,12 +1,15 @@
 require('dotenv').config()
+
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
 const app = express()
+
 app.use(cors())
 app.use(express.json())
 app.use(express.static('dist'))
+
 
 // Middleware setup
 const catcher = (req, res, next) => {
@@ -92,10 +95,12 @@ app.get('/info', (request, response) => {
 })
 
 
+// Unknown endpoint middleware
 const unknownEndpoint = (request, response) => {
     response.status(404).send({ error: 'unknown endpoint' })
   }
 app.use(unknownEndpoint)
+
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
