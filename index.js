@@ -1,9 +1,12 @@
 require('dotenv').config()
 
+
+
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
+const crypto = require("crypto")
 const app = express()
 
 app.use(cors())
@@ -35,8 +38,22 @@ app.use(morgan(incomingMorgan));
 
 // Routes
 app.get('/api/persons', (request, response, next) => {
-    Person.find({}).then(persons => {
+    Person.find({})
+    .then(persons => {
         response.json(persons);
+    })
+    .catch(error => next(error))
+})
+
+
+app.get('/api/persons/:id', (request, response, next) => {
+    Person.findOne({id : request.params.id})
+    .then(person => {
+        if (person) {
+            response.json(person)
+        } else {
+            response.status(404).json({error: "Person with that id not found"})
+        }
     })
     .catch(error => next(error))
 })
@@ -48,7 +65,7 @@ app.post('/api/persons', (request, response, next) => {
 
     } else {
         const person = new Person({
-            id: (Math.random() * 10000000).toFixed(),
+            id: crypto.randomBytes(10).toString('hex'),
             name: request.body.name,
             number: request.body.number? request.body.number : null
         });
@@ -62,30 +79,41 @@ app.post('/api/persons', (request, response, next) => {
 
 
 app.put('/api/persons/:id', (request, response, next) => {
-    Person.findOneAndUpdate({id : Number(request.params.id)}, {number : request.body.number})
-        .then(() => response.status(200).json({Message: 'Ok'}))
-        .catch(error => next(error));
+    Person.findOneAndUpdate({id : request.params.id}, {number : request.body.number})
+    .then(person => {
+        if (person) {
+            response.status(200).json(person)
+        } else {
+            response.status(404).json({error: "Person with that id not found"})
+        } 
+    })
+    .catch(error => next(error));
 });
 
 
 app.delete('/api/persons/:id', (request, response, next) => {
-    Person.findOneAndDelete({id : Number(request.params.id)})
-        .then((res) => {
-            if (!res) {
-                response.status(404).json({error : 'Not Found'});
-            } else {
-                response.status(204).end();
-            }
-        }).catch(error => next(error));
+    Person.findOneAndDelete({id : request.params.id})
+    .then((res) => {
+        if (!res) {
+            response.status(404).json({error : 'Not Found'});
+        } else {
+            response.status(204).end();
+        }
+    })
+    .catch(error => next(error));
 });
 
 
-app.get('/info', (request, response) => {
-    response.send(`
-        <p>Phonebook has info for ${persons.length} people.</p>
-        <p>Datetime ${new Date}</p>
-        `
-    )
+app.get('/info', (request, response, next) => {
+    Person.find({})
+    .then(persons => {
+        response.send(`
+            <p>Phonebook has info for ${persons.length} people.</p>
+            <p>Datetime ${new Date}</p>
+            `
+        )
+    })
+    .catch(error => next(error))
 })
 
 // Custom error handler middleware
