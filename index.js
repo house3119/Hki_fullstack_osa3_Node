@@ -79,7 +79,11 @@ app.post('/api/persons', (request, response, next) => {
 
 
 app.put('/api/persons/:id', (request, response, next) => {
-    Person.findOneAndUpdate({id : request.params.id}, {number : request.body.number})
+    Person.findOneAndUpdate(
+        {id : request.params.id},
+        {number : request.body.number},
+        {new: true, runValidators: true, context: 'query'}
+    )
     .then(person => {
         if (person) {
             response.status(200).json(person)
